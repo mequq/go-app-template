@@ -1,0 +1,10 @@
+.git
+Dockerfile
+README.md
+.gitignore
+.gitlab-ci.yml
+.gitkeep
+.dockerignore
+docker-compose.yml
+charts/
+openapi.yml

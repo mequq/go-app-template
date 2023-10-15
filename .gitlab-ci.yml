@@ -1,0 +1,48 @@
+
+
+stages:
+  - build
+  - test
+  - check_deploy
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  HELM_NAME: $CI_PROJECT_NAME
+
+
+
+build-docker:
+  image: docker:19.03.11
+  stage: build
+  
+  before_script:
+    - env
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWD $CI_REGISTRY
+  script:
+    - echo "Building the Docker image..."
+    - docker build . -t $CI_REGISTRY/lenz/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY/lenz/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHA
+  only:
+    - master
+    - main
+    - develop
+    - uat
+
+
+helm-chart:
+  image: dtzar/helm-kubectl:3
+  stage: build
+  variables:
+    HELM_REGISTRY:  https://nexus.aban.io/repository/aban-helm/
+    TEMP_DIR: /tmp/TempHelmPackages
+  script:
+    # - wget https://github.com/mikefarah/yq/releases/download/v4.9.1/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
+    - mkdir ${TEMP_DIR}
+    - helm package --destination=${TEMP_DIR}  charts/*
+    - curl -u ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWD} ${HELM_REGISTRY} -T /tmp/TempHelmPackages/*.tgz
+  only:
+    - master
+    - main
+

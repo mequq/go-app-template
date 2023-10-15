@@ -1,0 +1,19 @@
+{{ if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "live-epg.fullname" . }}
+  labels:
+    {{- include "live-epg.labels" . | nindent 4 }}
+spec:
+  hosts:
+  - {{ include "live-epg.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  http:
+  # TODO base on variable 
+  - match:
+    - uri:
+        prefix:  {{ .Values.istio.virtualService.urlPrefix }}
+    route:
+    - destination:
+        host: {{ include "live-epg.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{ end }}

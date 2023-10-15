@@ -1,0 +1,12 @@
+{{- if .Values.app.env.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "live-epg.fullname" . }}-env
+  labels:
+    {{- include "live-epg.labels" . | nindent 4 }}
+data:
+  {{- with .Values.app.env.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
