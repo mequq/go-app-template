@@ -36,7 +36,7 @@ func (s *HealthzService) HealthzLiveness(c *gin.Context) {
 // Healthz Readiness
 func (s *HealthzService) HealthzReadiness(c *gin.Context) {
 	ctx := amid.GetContextFromGin(c)
-	s.logger.DebugContext(ctx, "HealthzReadiness", "ctx", ctx)
+	s.logger.DebugContext(ctx, "HealthzReadiness", "ctx", biz.LogContext(ctx))
 	s.uc.Readiness(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

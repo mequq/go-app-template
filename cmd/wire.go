@@ -6,6 +6,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/google/wire"
 
 	"application/config"
@@ -14,12 +16,11 @@ import (
 	"application/internal/server"
 	"application/internal/service"
 
+	"context"
 	"log/slog"
-
-	"github.com/gin-gonic/gin"
 )
 
-func wireApp(cfg *config.ViperConfig, logger *slog.Logger) (*gin.Engine, error) {
+func wireApp(ctx context.Context, cfg *config.ViperConfig, logger *slog.Logger) (http.Handler, error) {
 	panic(wire.Build(
 		server.ServerProviderSet,
 		service.ServiceProviderSet,

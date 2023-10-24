@@ -3,6 +3,7 @@ package server
 import (
 	"application/config"
 	"application/internal/service"
+	"net/http"
 
 	"log/slog"
 
@@ -15,7 +16,7 @@ func NewGinServer(
 	logger *slog.Logger,
 	healthzSvc *service.HealthzService,
 
-) *gin.Engine {
+) http.Handler {
 
 	// gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()

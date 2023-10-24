@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -23,13 +24,15 @@ type DataSource struct {
 	logger  *slog.Logger
 	cfg     *config.ViperConfig
 	mysqlDB *gorm.DB
+	ctx     context.Context
 }
 
 // NewDataSource creates a new DataSource
-func NewDataSource(logger *slog.Logger, cfg *config.ViperConfig) (*DataSource, error) {
+func NewDataSource(ctx context.Context, logger *slog.Logger, cfg *config.ViperConfig) (*DataSource, error) {
 	ds := &DataSource{
 		logger: logger.With(zap.String("type", "datasource")),
 		cfg:    cfg,
+		ctx:    ctx,
 	}
 	err := ds.Init()
 	if err != nil {

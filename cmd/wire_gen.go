@@ -12,20 +12,22 @@ import (
 	"application/internal/data"
 	"application/internal/server"
 	"application/internal/service"
-	"github.com/gin-gonic/gin"
+	"context"
 	"log/slog"
+	"net/http"
 )
 
 // Injectors from wire.go:
 
-func wireApp(cfg *config.ViperConfig, logger *slog.Logger) (*gin.Engine, error) {
-	dataSource, err := data.NewDataSource(logger, cfg)
+func wireApp(ctx context.Context, cfg *config.ViperConfig, logger *slog.Logger) (http.Handler, error) {
+	dataSource, err := data.NewDataSource(ctx, logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 	healthzRepoInterface := data.NewHealthzRepo(logger, dataSource)
 	healthzUseCaseInterface := biz.NewHealthzUseCase(healthzRepoInterface, logger)
-	healthzService := service.NewHealthzService(healthzUseCaseInterface, logger)
-	engine := server.NewGinServer(cfg, logger, healthzService)
-	return engine, nil
+	gorilaMuxHealthzService := service.NewGorilaMuxHealthzService(healthzUseCaseInterface, logger)
+	handler := server.NewGorillaMuxServer(cfg, logger, gorilaMuxHealthzService)
+	return handler, nil
+	
 }

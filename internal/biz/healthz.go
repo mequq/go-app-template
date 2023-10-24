@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"log/slog"
+
+	"go.opentelemetry.io/otel"
 )
 
 type HealthzRepoInterface interface {
@@ -25,14 +27,37 @@ type HealthzUseCase struct {
 func NewHealthzUseCase(repo HealthzRepoInterface, logger *slog.Logger) HealthzUseCaseInterface {
 	return &HealthzUseCase{
 		repo:   repo,
-		logger: logger,
+		logger: logger.With("layer", "HealthzUseCase"),
 	}
 }
 
 func (uc *HealthzUseCase) Readiness(ctx context.Context) error {
+
+	// logger := uc.logger.With("method", "Readiness", "ctx", LogContext(ctx))
+
+	ctx, span := otel.Tracer("usecase").Start(ctx, "rediness")
+	defer span.End()
+
+	// client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
+	// req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:9090", nil)
+	// if err != nil {
+	// 	logger.Error("error creating request", "error", err)
+	// 	return err
+	// }
+
+	// _, err = client.Do(req)
+	// if err != nil {
+	// 	logger.Error("error doing request", "error", err)
+	// 	return err
+	// }
+
+	// logger.Debug("Readiness")
 	return uc.repo.Readiness(ctx)
 }
 
 func (uc *HealthzUseCase) Liveness(ctx context.Context) error {
+	logger := uc.logger.With("method", "Liveness", "ctx", LogContext(ctx))
+	logger.Debug("Liveness")
 	return uc.repo.Liveness(ctx)
 }

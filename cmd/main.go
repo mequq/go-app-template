@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,13 +16,28 @@ import (
 
 	"log/slog"
 
+	apperror "git.abanppc.com/lenz-public/go-app-error"
 	slogmulti "github.com/samber/slog-multi"
+	"go.opentelemetry.io/contrib/propagators/b3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
 	"go.uber.org/zap"
+)
+
+var (
+	ErrorRequestTimeout = apperror.NewAppError(1000, 503, "request timeout")
 )
 
 func main() {
 
 	// ...
+
+	ctx := context.Background()
+	defer ctx.Done()
 
 	cfg := &config.ViperConfig{}
 	conf, err := config.NewConfig("config.yaml")
@@ -33,25 +49,93 @@ func main() {
 		panic(err)
 	}
 
-	// logger := initZapLogger(cfg)
-	// logger.Debug("config", zap.Any("cfg", cfg))
+	// init tracer to stdout
+
+	// exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint())
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		err := exporter.Shutdown(ctx)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// init tracer
+	r := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String("myService"),
+		semconv.ServiceVersionKey.String("1.0.0"),
+		semconv.ServiceInstanceIDKey.String("abcdef12345"),
+		semconv.ContainerName("myContainer"),
+	)
+
+	r2, err := resource.New(context.Background(),
+		// resource.WithFromEnv(),   // pull attributes from OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME environment variables
+		// resource.WithProcess(),   // This option configures a set of Detectors that discover process information
+		// resource.WithOS(),        // This option configures a set of Detectors that discover OS information
+		resource.WithContainer(), // This option configures a set of Detectors that discover container information
+		// resource.WithHost(),      // This option configures a set of Detectors that discover host information
+		// resource.WithAttributes(attribute.String("foo", "bar")), // Or specify resource attributes directly
+		// resource.WithContainerID(),
+		// resource.WithSchemaURL(semconv.SchemaURL),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	resource, err := resource.Merge(r, r2)
+	if err != nil {
+		panic(err)
+	}
+
+	// init tracer
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource),
+	)
+
+	p := b3.New()
+	// Register the B3 propagator globally.
+	otel.SetTextMapPropagator(p)
+
+	// init tracer global
+	otel.SetTracerProvider(tp)
+
+	// init logger
 	logger := initSlogLogger(cfg)
 	logger.Info("config", "cfg", cfg)
-	engine, err := wireApp(cfg, logger)
+
+	engine, err := wireApp(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("failed to init app", zap.Error(err))
 		panic(err)
 	}
+	timeoutMSG, err := json.Marshal(ErrorRequestTimeout)
+	if err != nil {
+		panic(err)
+	}
+
+	timeoutHandler := http.TimeoutHandler(engine, 5*time.Second, string(timeoutMSG))
 
 	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: engine,
+		Addr:        ":8080",
+		Handler:     timeoutHandler,
+		ReadTimeout: 3 * time.Second,
 	}
 
 	go func() {
 		err := httpServer.ListenAndServe()
 		if err != nil {
-			logger.Error("failed to run app", zap.Error(err))
+			logger.Error("failed to run app", "err", err)
 		}
 
 	}()
@@ -60,7 +144,7 @@ func main() {
 	signal := <-quit
 
 	logger.Info("app stopping...")
-	ctx, cancell := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancell := context.WithTimeout(ctx, 5*time.Second)
 	defer cancell()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
@@ -97,7 +181,6 @@ func initSlogLogger(conf *config.ViperConfig) *slog.Logger {
 
 	// add stdout
 	slogHandlers = append(slogHandlers, slog.NewJSONHandler(os.Stdout, slogHandlerOptions))
-
 	// add udp if logstash enabled
 	if conf.Observability.Logging.Logstash.Enabled {
 		// options := slogsyslog.Option{}
@@ -110,15 +193,8 @@ func initSlogLogger(conf *config.ViperConfig) *slog.Logger {
 		slogHandlers = append(slogHandlers, slog.NewJSONHandler(con, slogHandlerOptions))
 	}
 
-	// init logger
-	// con, err := net.Dial("udp", "127.0.0.1:9000")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Fprintf(con, "hello world")
-
 	logger := slog.New(slogmulti.Fanout(slogHandlers...))
-	slog.SetDefault(logger)
+	// slog.SetDefault(logger)
 
 	return logger
 
