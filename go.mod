@@ -9,7 +9,6 @@ require (
 	git.abanppc.com/lenz-public/go-app-error v0.0.3
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/wire v0.5.0
-	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/samber/slog-multi v1.0.2
 	github.com/spf13/viper v1.15.0
