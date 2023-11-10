@@ -16,20 +16,19 @@ import (
 
 	"log/slog"
 
-	apperror "git.abanppc.com/lenz-public/go-app-error"
+	"application/internal/utils"
+
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-
-	"go.uber.org/zap"
 )
 
 var (
-	ErrorRequestTimeout = apperror.NewAppError(1000, 503, "request timeout")
+	ErrorRequestTimeout = utils.NewAppError(1000, 503, "request timeout")
 )
 
 func main() {
@@ -51,15 +50,15 @@ func main() {
 
 	// init tracer to stdout
 
-	// exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint())
+	exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
 	if err != nil {
 		panic(err)
 	}
+
+	// exporter, err := jaeger.New(jaeger.WithCollectorEndpoint())
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	defer func() {
 		err := exporter.Shutdown(ctx)
@@ -99,7 +98,7 @@ func main() {
 	// init tracer
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithBatcher(nil),
 		sdktrace.WithResource(resource),
 	)
 
@@ -116,7 +115,7 @@ func main() {
 
 	engine, err := wireApp(ctx, cfg, logger)
 	if err != nil {
-		logger.Error("failed to init app", zap.Error(err))
+		logger.Error("failed to init app", "err", err)
 		panic(err)
 	}
 	timeoutMSG, err := json.Marshal(ErrorRequestTimeout)

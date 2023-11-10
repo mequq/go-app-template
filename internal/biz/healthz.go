@@ -1,6 +1,7 @@
 package biz
 
 import (
+	"application/internal/utils"
 	"context"
 
 	"log/slog"
@@ -57,7 +58,7 @@ func (uc *HealthzUseCase) Readiness(ctx context.Context) error {
 }
 
 func (uc *HealthzUseCase) Liveness(ctx context.Context) error {
-	logger := uc.logger.With("method", "Liveness", "ctx", LogContext(ctx))
+	logger := uc.logger.With("method", "Liveness", "ctx", utils.LogContext(ctx))
 	logger.Debug("Liveness")
 	return uc.repo.Liveness(ctx)
 }

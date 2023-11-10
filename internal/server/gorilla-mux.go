@@ -20,10 +20,13 @@ func NewGorillaMuxServer(
 ) http.Handler {
 
 	mux := mux.NewRouter()
-	loggingMiddleWare := NewGorillaMuxLoggerMiddleware(WithLevel(slog.LevelInfo), WithLogger(logger))
-	mux.Use(loggingMiddleWare.Middleware)
+	middleware := NewGorilaMuxAuthMiddleware(WithLevel(slog.LevelInfo), WithLogger(logger))
+	// logger middleware
+
 	mux.Use(otelmux.Middleware("my-server"))
-	mux.Use(GorillaMuxContextMiddleware)
+	mux.Use(middleware.ContextMiddleware)
+	mux.Use(middleware.RecoverMiddleware)
+	mux.Use(middleware.LoggerMiddleware)
 
 	healthzSvc.RegisterRoutes(mux)
 	// http.Handle("/", mux)

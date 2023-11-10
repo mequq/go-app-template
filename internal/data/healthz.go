@@ -2,6 +2,7 @@ package data
 
 import (
 	"application/internal/biz"
+	"application/internal/utils"
 	"context"
 	"log/slog"
 
@@ -31,7 +32,7 @@ func (r *HealthzRepo) Readiness(ctx context.Context) error {
 }
 
 func (r *HealthzRepo) Liveness(ctx context.Context) error {
-	logger := r.logger.With("method", "Liveness", "ctx", biz.LogContext(ctx))
+	logger := r.logger.With("method", "Liveness", "ctx", utils.LogContext(ctx))
 	logger.Debug("repo Liveness")
 	return nil
 }

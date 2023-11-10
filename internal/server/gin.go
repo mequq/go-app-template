@@ -1,26 +1,26 @@
 package server
 
-import (
-	"application/config"
-	"application/internal/service"
-	"net/http"
+// import (
+// 	"application/config"
+// 	"application/internal/service"
+// 	"net/http"
 
-	"log/slog"
+// 	"log/slog"
 
-	"github.com/gin-gonic/gin"
-)
+// 	"github.com/gin-gonic/gin"
+// )
 
-// NewServer creates a new HTTP server and set up all routes.
-func NewGinServer(
-	cfg *config.ViperConfig,
-	logger *slog.Logger,
-	healthzSvc *service.HealthzService,
+// // NewServer creates a new HTTP server and set up all routes.
+// func NewGinServer(
+// 	cfg *config.ViperConfig,
+// 	logger *slog.Logger,
+// 	healthzSvc *service.HealthzService,
 
-) http.Handler {
+// ) http.Handler {
 
-	// gin.SetMode(gin.ReleaseMode)
-	engine := gin.Default()
-	healthzSvc.RegisterRoutes(engine)
-	return engine
+// 	// gin.SetMode(gin.ReleaseMode)
+// 	engine := gin.Default()
+// 	healthzSvc.RegisterRoutes(engine)
+// 	return engine
 
-}
+// }

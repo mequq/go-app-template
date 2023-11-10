@@ -3,15 +3,10 @@ package data
 import (
 	"context"
 	"errors"
-	"time"
 
 	"application/config"
 
 	"log/slog"
-
-	"go.uber.org/zap"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 // Erors
@@ -21,16 +16,16 @@ var (
 
 // DataSouce is the struct that holds all the data sources
 type DataSource struct {
-	logger  *slog.Logger
-	cfg     *config.ViperConfig
-	mysqlDB *gorm.DB
-	ctx     context.Context
+	logger *slog.Logger
+	cfg    *config.ViperConfig
+
+	ctx context.Context
 }
 
 // NewDataSource creates a new DataSource
 func NewDataSource(ctx context.Context, logger *slog.Logger, cfg *config.ViperConfig) (*DataSource, error) {
 	ds := &DataSource{
-		logger: logger.With(zap.String("type", "datasource")),
+		logger: logger.With("module", "repo"),
 		cfg:    cfg,
 		ctx:    ctx,
 	}
@@ -49,29 +44,29 @@ func (ds *DataSource) Init() error {
 	return nil
 }
 
-func (ds *DataSource) Close() error {
-	return nil
-}
+// func (ds *DataSource) Close() error {
+// 	return nil
+// }
 
-func (ds *DataSource) InitSQL() error {
+// func (ds *DataSource) InitSQL() error {
 
-	var err error
-	dns := ds.cfg.DatasourceConfig.Mysql.Dns
-	cfg := &gorm.Config{
-		TranslateError: true,
-	}
-	ds.mysqlDB, err = gorm.Open(mysql.Open(dns), cfg)
-	if err != nil {
-		return err
-	}
-	sqlDB, err := ds.mysqlDB.DB()
-	if err != nil {
-		return err
-	}
+// 	var err error
+// 	dns := ds.cfg.DatasourceConfig.Mysql.Dns
+// 	cfg := &gorm.Config{
+// 		TranslateError: true,
+// 	}
+// 	ds.mysqlDB, err = gorm.Open(mysql.Open(dns), cfg)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	sqlDB, err := ds.mysqlDB.DB()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	sqlDB.SetMaxIdleConns(3)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Minute * 30)
-	sqlDB.SetConnMaxIdleTime(time.Minute * 10)
-	return nil
-}
+// 	sqlDB.SetMaxIdleConns(3)
+// 	sqlDB.SetMaxOpenConns(100)
+// 	sqlDB.SetConnMaxLifetime(time.Minute * 30)
+// 	sqlDB.SetConnMaxIdleTime(time.Minute * 10)
+// 	return nil
+// }
