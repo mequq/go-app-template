@@ -1,6 +1,8 @@
 package main
 
 import (
+	"application/config"
+	"application/internal/utils"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,11 +14,7 @@ import (
 
 	"os"
 
-	"application/config"
-
 	"log/slog"
-
-	"application/internal/utils"
 
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/propagators/b3"
@@ -111,7 +109,7 @@ func main() {
 
 	// init logger
 	logger := initSlogLogger(cfg)
-	logger.Info("config", "cfg", cfg)
+	logger.Debug("config", "cfg", cfg)
 
 	engine, err := wireApp(ctx, cfg, logger)
 	if err != nil {
@@ -133,18 +131,19 @@ func main() {
 
 	go func() {
 		err := httpServer.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			logger.Error("failed to run app", "err", err)
 		}
 
 	}()
+	logger.Info("microservice started")
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	signal := <-quit
 
 	logger.Info("app stopping...")
-	ctx, cancell := context.WithTimeout(ctx, 5*time.Second)
-	defer cancell()
+	// ctx, cancell := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancell()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
 		logger.Error("failed to shutdown app", err)
@@ -185,7 +184,7 @@ func initSlogLogger(conf *config.ViperConfig) *slog.Logger {
 		// options := slogsyslog.Option{}
 		fmt.Println("logstash enabled")
 		// address := conf.Observability.Logging.Logstash.Address
-		con, err := net.Dial("udp", "127.0.0.1:9000")
+		con, err := net.Dial("udp", conf.Observability.Logging.Logstash.Address)
 		if err != nil {
 			panic(err)
 		}
@@ -193,7 +192,11 @@ func initSlogLogger(conf *config.ViperConfig) *slog.Logger {
 	}
 
 	logger := slog.New(slogmulti.Fanout(slogHandlers...))
-	// slog.SetDefault(logger)
+	tages := []string{}
+	tages = append(tages, conf.ServerConfig.Name)
+
+	logger = logger.With("service", conf.ServerConfig.Name, "tags", tages)
+	slog.SetDefault(logger)
 
 	return logger
 

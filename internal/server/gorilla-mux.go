@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"git.abanppc.com/lenz-public/lenz-goapp-sdk/pkg/utils/httpmiddleware"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 )
@@ -20,7 +21,10 @@ func NewGorillaMuxServer(
 ) http.Handler {
 
 	mux := mux.NewRouter()
-	middleware := NewGorilaMuxAuthMiddleware(WithLevel(slog.LevelInfo), WithLogger(logger))
+	middleware := httpmiddleware.NewGorilaMuxMiddleware(
+		httpmiddleware.WithLevel(slog.LevelInfo),
+		httpmiddleware.WithLogger(logger),
+	)
 	// logger middleware
 
 	mux.Use(otelmux.Middleware("my-server"))

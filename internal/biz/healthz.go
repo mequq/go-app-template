@@ -6,6 +6,7 @@ import (
 
 	"log/slog"
 
+	// otelhttp "go.opentelemetry.io/exporter/otlp/otlphttp"
 	"go.opentelemetry.io/otel"
 )
 
@@ -39,7 +40,9 @@ func (uc *HealthzUseCase) Readiness(ctx context.Context) error {
 	ctx, span := otel.Tracer("usecase").Start(ctx, "rediness")
 	defer span.End()
 
-	// client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+	// client := otelhttp.New
+
+	// zclient := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
 
 	// req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:9090", nil)
 	// if err != nil {

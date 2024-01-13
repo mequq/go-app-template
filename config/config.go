@@ -61,6 +61,7 @@ type (
 	ViperServerConfig struct {
 		Grpc GrpcConfig `mapstructure:"grpc"`
 		Http HttpConfig `mapstructure:"http"`
+		Name string     `mapstructure:"name"`
 	}
 
 	Observability struct {
